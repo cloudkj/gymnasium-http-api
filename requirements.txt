@@ -1,0 +1,6 @@
+Pillow
+fastapi
+gymnasium[classic-control]
+numpy
+pydantic
+uvicorn
