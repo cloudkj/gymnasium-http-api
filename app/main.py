@@ -19,7 +19,6 @@ app.add_middleware(
     allow_methods=["*"], # Allows all methods (GET, POST, DELETE, etc.)
     allow_headers=["*"],
 )
-app.mount("/", StaticFiles(directory="app/static"), name="static")
 
 # In-memory store for active environments
 # Mapping: instance_id -> gym.Env
@@ -196,3 +195,5 @@ def close_env(instance_id: str):
         del envs[instance_id]
         return {"message": "Environment closed and deleted."}
     raise HTTPException(status_code=404, detail="Instance not found")
+
+app.mount("/", StaticFiles(directory="app/static"), name="static")
