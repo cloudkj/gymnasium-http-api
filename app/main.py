@@ -196,6 +196,3 @@ def close_env(instance_id: str):
         del envs[instance_id]
         return {"message": "Environment closed and deleted."}
     raise HTTPException(status_code=404, detail="Instance not found")
-
-if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=5000, reload=True)
