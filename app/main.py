@@ -4,12 +4,11 @@ import base64
 from io import BytesIO
 from PIL import Image
 
-import fastapi
 import gymnasium as gym
 import numpy as np
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI(title="Gymnasium HTTP API", version="1.0.0")
@@ -20,6 +19,7 @@ app.add_middleware(
     allow_methods=["*"], # Allows all methods (GET, POST, DELETE, etc.)
     allow_headers=["*"],
 )
+app.mount("/", StaticFiles(directory="app/static"), name="static")
 
 # In-memory store for active environments
 # Mapping: instance_id -> gym.Env
