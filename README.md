@@ -1,10 +1,10 @@
 gymnasium-http-api
 ==================
 
-RESTful interface for the [Gymnasium](https://gymnasium.farama.org/) library to allow for language-agnostic development
+REST interface for the [Gymnasium](https://gymnasium.farama.org/) library to allow for language-agnostic development
 of reinforcement learning agents. Spiritual successor to [gym-http-api](https://github.com/openai/gym-http-api).
 
-## Quick Start
+### Quick Start
 
 The fastest way to get started is to pull and run the latest version of the associated container image from
 [GHCR](https://ghcr.io/cloudkj/gymnasium-http-api):

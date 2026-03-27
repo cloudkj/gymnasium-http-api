@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Gymnasium HTTP Agent</title>
+</head>
 <body>
     <h1>Sample Gymnasium HTTP Agent</h1>
 
     <h2>Client Code</h2>
     <p>Wrapper for the main environment endpoints:</p>
-    <pre id="client-view"></pre>
+    <pre id="client-view" style="overflow-x:auto"></pre>
 
     <h2>Agent Code</h2>
-    <textarea id="agent" rows="10" cols="50">
+    <textarea id="agent" style="box-sizing:border-box;height:300px;overflow-x:auto;padding:1em;resize:vertical;width:100%" spellcheck="false">
+// Create an environment and reset state to start a new episode
 const env = await Env.make("CartPole-v1");
-
-let state = await env.reset();
-let observation = state.observation;
-console.log("Starting observation: " + observation);
+const initial = await env.reset();
+console.log("Starting observation: " + initial.observation);
 
 let episodeOver = false;
 let totalReward = 0;
 
 while (!episodeOver) {
-    const [position, velocity, angle, angVelocity] = observation;
-    const action = (angle + angVelocity < 0) ? 0 : 1;
+    const action = 0; // To the left, to the left
     const state = await env.step(action);
-    observation = state.observation;
-
     draw(await env.render());
     totalReward += state.reward;
     episodeOver = state.terminated || state.truncated;
@@ -35,7 +36,10 @@ await env.close();
     
     <button onclick="runAgent()">Run</button>
 
-    <img id="render" style="display:none; margin-top: 1em; border: 1px solid black;" />
+    <div id="environment" style="display:none">
+        <h2>Environment</h2>
+        <img style="max-width:100%;border: 1px solid black;" />
+    </div>
 
     <script id="client">
         class Env {
@@ -61,11 +65,11 @@ await env.close();
         }
 
         function draw(res) {
-            if (res.encoding === "base64") {
-                const img = document.getElementById('render');
-                img.src = `data:${res.content_type};base64,${res.data}`;
-                img.style.display = "block";
-            }
+            if (res.encoding != "base64") return;
+            const render = document.getElementById('environment');
+            const img = render.querySelector('img');
+            img.src = `data:${res.content_type};base64,${res.data}`;
+            render.style.display = 'block';
         }
     </script>
 
