@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <h1>Sample Gymnasium HTTP Agent</h1>
+
+    <h2>Client Code</h2>
+    <p>Wrapper for the main environment endpoints:</p>
+    <pre id="client-view"></pre>
+
+    <h2>Agent Code</h2>
+    <textarea id="agent" rows="10" cols="50">
+const env = await Env.make("CartPole-v1");
+
+let state = await env.reset();
+let observation = state.observation;
+console.log("Starting observation: " + observation);
+
+let episodeOver = false;
+let totalReward = 0;
+
+while (!episodeOver) {
+    const [position, velocity, angle, angVelocity] = observation;
+    const action = (angle + angVelocity < 0) ? 0 : 1;
+    const state = await env.step(action);
+    observation = state.observation;
+
+    draw(await env.render());
+    totalReward += state.reward;
+    episodeOver = state.terminated || state.truncated;
+}
+
+console.log("Episode finished! Total reward: " + totalReward);
+await env.close();
+    </textarea>
+    
+    <button onclick="runAgent()">Run</button>
+
+    <img id="render" style="display:none; margin-top: 1em; border: 1px solid black;" />
+
+    <script id="client">
+        class Env {
+            constructor(instanceId) { this.instanceId = instanceId; }
+            static async make(envId, renderMode = "rgb_array") {
+                const result = await request('/', 'POST', { env_id: envId, render_mode: renderMode });
+                return new Env(result.instance_id);
+            }
+            reset  = async () => await request(`/${this.instanceId}/reset/`, 'POST', {});
+            step   = async (action) => await request(`/${this.instanceId}/step/`, 'POST', { action });
+            render = async () => await request(`/${this.instanceId}/render/`);
+            close  = async () => await request(`/${this.instanceId}/`, 'DELETE', {});
+        }
+    </script>
+
+    <script id="helpers">
+        async function request(path, method = 'GET', body = null) {
+            const url = `${window.location.origin}/v1/envs` + path;
+            const options = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) options.body = JSON.stringify(body);
+            const result = await fetch(url, options);
+            return await result.json();
+        }
+
+        function draw(res) {
+            if (res.encoding === "base64") {
+                const img = document.getElementById('render');
+                img.src = `data:${res.content_type};base64,${res.data}`;
+                img.style.display = "block";
+            }
+        }
+    </script>
+
+    <div id="agent-container" style="display: none;"></div>
+    <script>
+        // Display immutable helper code
+        document.getElementById("client-view").textContent = document.getElementById("client").textContent;
+
+        function runAgent() {
+            const code = document.getElementById('agent').value;
+            const container = document.getElementById('agent-container');
+
+            // Remove any existing dynamically created script element to allow re-execution
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+
+            // Create script element and append to DOM to execute code
+            const script = document.createElement('script');
+            // Wrap user-defined code in IIAFE to (1) allow for top-level `await` and (2) avoid polluting global scope
+            script.textContent = "(async () => {" + code + "})()";
+            container.appendChild(script);
+        }
+    </script>
+    
+</body>
+</html>
