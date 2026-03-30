@@ -1,4 +1,4 @@
-from app.services.gym_manager import envs
+from app.services.manager import envs
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from io import BytesIO

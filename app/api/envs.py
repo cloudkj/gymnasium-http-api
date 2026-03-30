@@ -3,7 +3,7 @@ import gymnasium as gym
 import uuid
 from io import BytesIO
 from app.models.schemas import EnvCreate, EnvReset, EnvAction
-from app.services.gym_manager import envs, serialize, serialize_space
+from app.services.manager import envs, serialize, serialize_space
 from fastapi import APIRouter, HTTPException
 from PIL import Image
 
