@@ -1,4 +1,5 @@
 import gymnasium as gym
+import math
 import numpy as np
 from typing import Any, Dict
 
@@ -7,19 +8,23 @@ from typing import Any, Dict
 envs: Dict[str, gym.Env] = {}
 
 def serialize(obj: Any) -> Any:
-    """Recursively converts NumPy arrays and generic types to standard Python types for JSON."""
     if isinstance(obj, np.ndarray):
-        return obj.tolist()
+        return [serialize(v) for v in obj.tolist()]
+    elif isinstance(obj, float):
+        if math.isinf(obj):
+            return "Infinity" if obj > 0 else "-Infinity"
+        if math.isnan(obj):
+            return "NaN"
+        return obj
     elif isinstance(obj, np.generic):
-        return obj.item()
+        return serialize(obj.item())
     elif isinstance(obj, dict):
         return {k: serialize(v) for k, v in obj.items()}
     elif isinstance(obj, (list, tuple)):
         return [serialize(v) for v in obj]
     return obj
 
-def get_space_info(space: gym.Space) -> Dict[str, Any]:
-    """Basic serialization of Gymnasium spaces."""
+def serialize_space(space: gym.Space) -> Dict[str, Any]:
     info = {"name": space.__class__.__name__}
     if hasattr(space, "n"):
         info["n"] = int(space.n)

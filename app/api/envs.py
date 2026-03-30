@@ -3,46 +3,46 @@ import gymnasium as gym
 import uuid
 from io import BytesIO
 from app.models.schemas import EnvCreate, EnvReset, EnvAction
-from app.services.gym_manager import envs, serialize, get_space_info
+from app.services.gym_manager import envs, serialize, serialize_space
 from fastapi import APIRouter, HTTPException
 from PIL import Image
 
 router = APIRouter()
 
 @router.post("/", summary="Create an instance of the specified environment")
-def create_env(req: EnvCreate):
+def create(request: EnvCreate):
     try:
-        env = gym.make(req.env_id, render_mode=req.render_mode)
+        env = gym.make(request.env_id, render_mode=request.render_mode)
         instance_id = str(uuid.uuid4())
         envs[instance_id] = env
         return {"instance_id": instance_id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
+    
 @router.get("/", summary="List all active environment instances")
-def list_envs():
-    return {"all_env_ids": {iid: env.spec.id for iid, env in envs.items()}}
+def list():
+    return {id: env.spec.id for id, env in envs.items()}
 
 @router.post("/{instance_id}/reset/", summary="Reset the environment")
-def reset_env(instance_id: str, req: EnvReset = EnvReset()):
+def reset(instance_id: str, request: EnvReset = EnvReset()):
     if instance_id not in envs:
         raise HTTPException(status_code=404, detail="Instance not found")
     
     try:
-        obs, info = envs[instance_id].reset(seed=req.seed, options=req.options)
+        obs, info = envs[instance_id].reset(seed=request.seed, options=request.options)
         return {"observation": serialize(obs), "info": serialize(info)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/{instance_id}/step/", summary="Step the environment")
-def step_env(instance_id: str, req: EnvAction):
+@router.post("/{instance_id}/step/", summary="Step through the environment with a specified action")
+def step(instance_id: str, request: EnvAction):
     if instance_id not in envs:
         raise HTTPException(status_code=404, detail="Instance not found")
     
     try:
         # Note: If the environment requires strict numpy arrays, you may need to cast req.action
         # based on envs[instance_id].action_space here. Most standard envs accept lists.
-        action = req.action
+        action = request.action
         
         obs, reward, terminated, truncated, info = envs[instance_id].step(action)
         return {
@@ -56,19 +56,19 @@ def step_env(instance_id: str, req: EnvAction):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{instance_id}/action_space/", summary="Get action space properties")
-def get_action_space(instance_id: str):
+def action_space(instance_id: str):
     if instance_id not in envs:
         raise HTTPException(status_code=404, detail="Instance not found")
-    return {"info": get_space_info(envs[instance_id].action_space)}
+    return serialize_space(envs[instance_id].action_space)
 
 @router.get("/{instance_id}/observation_space/", summary="Get observation space properties")
-def get_observation_space(instance_id: str):
+def observation_space(instance_id: str):
     if instance_id not in envs:
         raise HTTPException(status_code=404, detail="Instance not found")
-    return {"info": get_space_info(envs[instance_id].observation_space)}
+    return serialize_space(envs[instance_id].observation_space)
 
 @router.get("/{instance_id}/render/", summary="Render the current state of the environment")
-def render_env(instance_id: str):
+def render(instance_id: str):
     if instance_id not in envs:
         raise HTTPException(status_code=404, detail="Instance not found")
     
@@ -132,7 +132,7 @@ def render_env(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{instance_id}/", summary="Close and remove the environment")
-def close_env(instance_id: str):
+def close(instance_id: str):
     if instance_id in envs:
         envs[instance_id].close()
         del envs[instance_id]
