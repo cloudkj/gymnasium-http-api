@@ -119,6 +119,7 @@
 
         let countdown = 5;
         state.innerText = "Connecting...";
+        refresh();
         status.innerText = `Auto-refresh in ${countdown}s...`;
         setInterval(() => {
             countdown--;

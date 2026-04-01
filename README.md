@@ -1,6 +1,8 @@
 gymnasium-http-api
 ==================
 
+![Example monitor view running on gymnasium-http-api server](monitor_example.gif)
+
 REST interface for the [Gymnasium](https://gymnasium.farama.org/) library to allow for language-agnostic development
 of reinforcement learning agents. Spiritual successor to [openai/gym-http-api](https://github.com/openai/gym-http-api).
 
