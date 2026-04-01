@@ -2,7 +2,7 @@ gymnasium-http-api
 ==================
 
 REST interface for the [Gymnasium](https://gymnasium.farama.org/) library to allow for language-agnostic development
-of reinforcement learning agents. Spiritual successor to [gym-http-api](https://github.com/openai/gym-http-api).
+of reinforcement learning agents. Spiritual successor to [openai/gym-http-api](https://github.com/openai/gym-http-api).
 
 ### Quick Start
 
@@ -13,13 +13,23 @@ The fastest way to get started is to pull and run the latest version of the asso
 docker run --rm -it -p 5000:5000 ghcr.io/cloudkj/gymnasium-http-api
 ```
 
-Once the server is running, you can create and interact with environments through various endpoints. For example:
+Once the server is running, create and interact with environments through the various endpoints. Here's a short command-line example:
 
 ```
-curl -X POST -H "Content-Type: application/json" -d '{"env_id":"CartPole-v1"}' http://localhost:5000/v1/envs/
-```
+% curl -X POST http://localhost:5000/v1/envs/ \
+  -H 'Content-Type: application/json'\
+  -d '{"env_id":"CartPole-v1"}' 
+{"instance_id":"986a40f7-6472-4ac6-bc5f-86b7939898b1"}%
 
-Navigate to http://localhost:5000/docs to view auto-generated documentation for all supported endpoints.
+% curl -X POST http://localhost:5000/v1/envs/986a40f7-6472-4ac6-bc5f-86b7939898b1/reset/ \
+  -H 'Content-Type: application/json'
+{"observation":[-0.001753740361891687,0.0477466844022274,0.003655971959233284,-0.030443252995610237],"info":{}}
+
+% curl -X POST http://localhost:5000/v1/envs/986a40f7-6472-4ac6-bc5f-86b7939898b1/step/ \
+  -H 'Content-Type: application/json' \
+  -d '{"action": 0}'
+{"observation":[-0.0037473568227142096,-0.3425928056240082,0.008314925245940685,0.557033360004425],"reward":1.0,"terminated":false,"truncated":false,"info":{}}
+```
 
 ### Demo
 
@@ -63,3 +73,24 @@ while not episode_over:
 print(f"Episode finished! Total reward: {total_reward}")
 env.close()
 ```
+
+### Documentation
+
+The endpoints largely follow the conventions established by the legacy [gym-http-api](https://github.com/openai/gym-http-api)
+project. For the latest documentation, start an instance of the server and navigate to http://localhost:5000/docs to
+view auto-generated documentation for all supported endpoints.
+
+##### Environments
+
+* `GET /v1/envs/` - List all active environment instances
+* `POST /v1/envs/` - Create an instance of the specified environment
+* `POST /v1/envs/{instance_id}/reset/` - Reset the environment
+* `POST /v1/envs/{instance_id}/step/` - Step through the environment with a specified action
+* `GET /v1/envs/{instance_id}/action_space/` - Get action space properties
+* `GET /v1/envs/{instance_id}/observation_space/` - Get observation space properties
+* `DELETE /v1/envs/{instance_id}/` - Close and remove the environment
+
+##### Monitoring
+
+* `GET /v1/envs/{instance_id}/monitor/render/` - Render the current state of the environment
+* `GET /v1/envs/{instance_id}/monitor/stream/` - Continuously stream the current state of the environment
