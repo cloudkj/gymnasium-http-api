@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gymnasium Monitor</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
+        button:hover { background: #0056b3; }
+
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        .render-box { background: #eee; border-radius: 4px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 250px; }
+        .render-box img { max-width: 100%; height: 100%; object-fit: contain; }
+        
+        .env-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; }
+        .env-id { color: #666; font-weight: normal; font-family: monospace; font-size: 0.8rem; }
+        .empty-state { text-align: center; padding: 40px; color: #666; border: 1px dashed #ccc; grid-column: 1 / -1; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>Gymnasium Monitor</h1>
+            <div class="controls">
+                <button onclick="refresh()">Refresh</button>
+                <span id="status"></span>
+            </div>
+        </div>
+
+        <div id="grid" class="grid-layout">
+            <div class="card empty-state" id="state">
+                Click "Refresh" to look for active environments...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = `${window.location.origin}/v1/envs`;
+        const state = document.getElementById('state');
+        const status = document.getElementById('status');
+        let refreshInterval = null;
+        let activeInstances = new Set();
+
+        async function refresh() {
+            try {
+                status.innerHTML = `<span style="color: #007bff;">Fetching...</span>`;
+                const res = await fetch(`${baseUrl}/`);
+                if (!res.ok) throw new Error("API not reachable");
+                
+                const data = await res.json();
+                const serverEnvs = data || {};
+                const serverIds = Object.keys(serverEnvs);
+                
+                // Add new environments
+                for (const id of serverIds) {
+                    if (!activeInstances.has(id)) {
+                        addEnvironment(baseUrl, id, serverEnvs[id]);
+                        activeInstances.add(id);
+                    }
+                }
+                
+                // Remove closed environments
+                for (const id of activeInstances) {
+                    if (!serverIds.includes(id)) {
+                        removeEnvironment(id);
+                        activeInstances.delete(id);
+                    }
+                }
+                
+                // Toggle empty state message
+                state.style.display = 
+                    serverIds.length === 0 ? "block" : "none";
+                    
+                if (serverIds.length === 0) {
+                    state.innerText = "No active environments";
+                }
+
+            } catch (e) {
+                console.error("Refresh error:", e);
+                state.style.display = "block";
+                state.innerText = `Error connecting to API: ${e.message}`;
+                status.innerText = 'Error';
+            }
+        }
+
+        function addEnvironment(baseUrl, id, envName) {
+            const grid = document.getElementById('grid');
+            
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${id}`;
+            
+            const shortId = id.split('-')[0];
+            const header = document.createElement('div');
+            header.className = 'env-header';
+            header.innerHTML = `<span>${envName}</span> <span class="env-id">${shortId}</span>`;
+            
+            const renderBox = document.createElement('div');
+            renderBox.className = 'render-box';
+            
+            const img = document.createElement('img');
+            img.alt = `Stream for ${envName}`;
+            img.src = `${baseUrl}/${id}/monitor/stream/`;
+            
+            renderBox.appendChild(img);
+            card.appendChild(header);
+            card.appendChild(renderBox);
+            grid.appendChild(card);
+        }
+
+        function removeEnvironment(id) {
+            const card = document.getElementById(`card-${id}`);
+            if (card) card.remove();
+        }
+
+        let countdown = 5;
+        state.innerText = "Connecting...";
+        refresh();
+        status.innerText = `Auto-refresh in ${countdown}s...`;
+        setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                refresh();
+                countdown = 5;
+            }
+            status.innerText = `Auto-refresh in ${countdown}s...`;
+        }, 1000);
+    </script>
+</body>
+</html>
