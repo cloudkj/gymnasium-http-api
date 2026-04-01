@@ -50,7 +50,7 @@ await env.close();
             }
             reset  = async () => await request(`/${this.instanceId}/reset/`, 'POST', {});
             step   = async (action) => await request(`/${this.instanceId}/step/`, 'POST', { action });
-            render = async () => await request(`/${this.instanceId}/render/`);
+            render = async () => await request(`/${this.instanceId}/monitor/render/`);
             close  = async () => await request(`/${this.instanceId}/`, 'DELETE', {});
         }
     </script>
