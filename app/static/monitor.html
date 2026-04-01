@@ -9,7 +9,7 @@
         button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
         button:hover { background: #0056b3; }
 
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
         
         .render-box { background: #eee; border-radius: 4px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 250px; }
@@ -26,24 +26,28 @@
         <div class="header">
             <h1>Gymnasium Monitor</h1>
             <div class="controls">
-                <button onclick="refresh()">Refresh Environments</button>
+                <button onclick="refresh()">Refresh</button>
+                <span id="status"></span>
             </div>
         </div>
 
         <div id="grid" class="grid-layout">
-            <div class="card empty-state" id="emptyState">
-                Click "Start Monitoring" to look for active environments...
+            <div class="card empty-state" id="state">
+                Click "Refresh" to look for active environments...
             </div>
         </div>
     </div>
 
     <script>
         const baseUrl = `${window.location.origin}/v1/envs`;
+        const state = document.getElementById('state');
+        const status = document.getElementById('status');
         let refreshInterval = null;
-        let activeInstances = new Set(); // Tracks what is currently in the DOM
+        let activeInstances = new Set();
 
         async function refresh() {
             try {
+                status.innerHTML = `<span style="color: #007bff;">Fetching...</span>`;
                 const res = await fetch(`${baseUrl}/`);
                 if (!res.ok) throw new Error("API not reachable");
                 
@@ -68,17 +72,18 @@
                 }
                 
                 // Toggle empty state message
-                document.getElementById('emptyState').style.display = 
+                state.style.display = 
                     serverIds.length === 0 ? "block" : "none";
                     
                 if (serverIds.length === 0) {
-                    document.getElementById('emptyState').innerText = "No active environments";
+                    state.innerText = "No active environments";
                 }
 
             } catch (e) {
                 console.error("Refresh error:", e);
-                document.getElementById('emptyState').style.display = "block";
-                document.getElementById('emptyState').innerText = `Error connecting to API: ${e.message}`;
+                state.style.display = "block";
+                state.innerText = `Error connecting to API: ${e.message}`;
+                status.innerText = 'Error';
             }
         }
 
@@ -112,9 +117,17 @@
             if (card) card.remove();
         }
 
-        document.getElementById('emptyState').innerText = "Connecting...";
-        refresh();
-        refreshInterval = setInterval(refresh, 2000);
+        let countdown = 5;
+        state.innerText = "Connecting...";
+        status.innerText = `Auto-refresh in ${countdown}s...`;
+        setInterval(() => {
+            countdown--;
+            if (countdown <= 0) {
+                refresh();
+                countdown = 5;
+            }
+            status.innerText = `Auto-refresh in ${countdown}s...`;
+        }, 1000);
     </script>
 </body>
 </html>
