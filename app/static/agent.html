@@ -4,16 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sample Gymnasium HTTP Agent</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        pre { overflow-x: auto; }
+        textarea { box-sizing:border-box; height:300px; overflow-x:auto; padding:1em; resize:vertical; width:100%; }
+
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; width: 100%; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        
+        #environment { display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 300px; }
+        #environment span { display: block; background-color: #ddd; height: 300px; width: 100%; }
+        #environment img { max-width: 100%; height: auto; border: 1px solid #ddd; }
+    </style>
 </head>
 <body>
-    <h1>Sample Gymnasium HTTP Agent</h1>
+    <div class="container">
+        <div class="header">
+            <h1>Sample Gymnasium HTTP Agent</h1>
+        </div>
 
-    <h2>Client Code</h2>
-    <p>Wrapper for the main environment endpoints:</p>
-    <pre id="client-view" style="overflow-x:auto"></pre>
+        <div class="split-layout">
+            <div class="card">
+                <h2>Client Code</h2>
+                <p>Wrapper for the main environment endpoints:</p>
+                <pre id="client-view"></pre>
 
-    <h2>Agent Code</h2>
-    <textarea id="agent" style="box-sizing:border-box;height:300px;overflow-x:auto;padding:1em;resize:vertical;width:100%" spellcheck="false">
+                <h2>Agent Code</h2>
+                <textarea id="agent" spellcheck="false">
 // Create an environment and reset state to start a new episode
 const env = await Env.make("CartPole-v1");
 const initial = await env.reset();
@@ -32,13 +49,19 @@ while (!episodeOver) {
 
 console.log("Episode finished! Total reward: " + totalReward);
 await env.close();
-    </textarea>
-    
-    <button onclick="runAgent()">Run</button>
+                </textarea>
+                
+                <button onclick="runAgent()">Run</button>
+            </div>
 
-    <div id="environment" style="display:none">
-        <h2>Environment</h2>
-        <img style="max-width:100%;border: 1px solid black;" />
+            <div class="card">
+                <h2>Environment</h2>
+                <div id="environment">
+                    <span>&nbsp;</span>
+                    <img style="display: none;" />
+                </div>
+            </div>
+        </div>
     </div>
 
     <script id="client">
@@ -67,9 +90,10 @@ await env.close();
         function draw(res) {
             if (res.encoding != "base64") return;
             const render = document.getElementById('environment');
+            render.querySelector('span').style.display = 'none';
             const img = render.querySelector('img');
             img.src = `data:${res.content_type};base64,${res.data}`;
-            render.style.display = 'block';
+            img.style.display = 'block';
         }
     </script>
 

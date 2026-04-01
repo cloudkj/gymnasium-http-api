@@ -4,131 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gymnasium Monitor</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        .header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        input {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 250px;
-        }
-
-        button {
-            padding: 8px 15px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; }
         button:hover { background: #0056b3; }
-        button.stop { background: #dc3545; }
-        button.stop:hover { background: #bd2130; }
 
-        /* Grid for the environment streams */
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .env-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border: 1px solid #e1e4e8;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .env-header {
-            padding: 10px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e1e4e8;
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .env-id {
-            color: #6c757d;
-            font-weight: normal;
-            font-family: monospace;
-            font-size: 0.75rem;
-        }
-
-        .env-stream {
-            width: 100%;
-            height: 250px;
-            background: #24292e;
-            object-fit: contain; /* Ensures the aspect ratio is maintained */
-        }
-
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 50px;
-            color: #6c757d;
-            background: white;
-            border-radius: 8px;
-            border: 1px dashed #ccc;
-        }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        
+        .render-box { background: #eee; border-radius: 4px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 250px; }
+        .render-box img { max-width: 100%; height: 100%; object-fit: contain; }
+        
+        .env-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; }
+        .env-id { color: #666; font-weight: normal; font-family: monospace; font-size: 0.8rem; }
+        .empty-state { text-align: center; padding: 40px; color: #666; border: 1px dashed #ccc; grid-column: 1 / -1; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Gymnasium Monitor</h1>
-        <div class="controls">
-            <button onclick="pollEnvironments()">Refresh</button>
+    <div class="container">
+        <div class="header">
+            <h1>Gymnasium Monitor</h1>
+            <div class="controls">
+                <button onclick="refresh()">Refresh Environments</button>
+            </div>
         </div>
-    </div>
 
-    <div id="grid">
-        <div class="empty-state" id="emptyState">
-            Click "Start Monitoring" to look for active environments...
+        <div id="grid" class="grid-layout">
+            <div class="card empty-state" id="emptyState">
+                Click "Start Monitoring" to look for active environments...
+            </div>
         </div>
     </div>
 
     <script>
         const baseUrl = `${window.location.origin}/v1/envs`;
-        let pollingInterval = null;
+        let refreshInterval = null;
         let activeInstances = new Set(); // Tracks what is currently in the DOM
 
-        async function pollEnvironments() {
+        async function refresh() {
             try {
                 const res = await fetch(`${baseUrl}/`);
                 if (!res.ok) throw new Error("API not reachable");
@@ -137,18 +51,18 @@
                 const serverEnvs = data || {};
                 const serverIds = Object.keys(serverEnvs);
                 
-                // 1. ADD new environments that aren't in the DOM yet
+                // Add new environments
                 for (const id of serverIds) {
                     if (!activeInstances.has(id)) {
-                        addStreamCard(baseUrl, id, serverEnvs[id]);
+                        addEnvironment(baseUrl, id, serverEnvs[id]);
                         activeInstances.add(id);
                     }
                 }
                 
-                // 2. REMOVE environments that are in the DOM but no longer on the server
+                // Remove closed environments
                 for (const id of activeInstances) {
                     if (!serverIds.includes(id)) {
-                        removeStreamCard(id);
+                        removeEnvironment(id);
                         activeInstances.delete(id);
                     }
                 }
@@ -158,52 +72,49 @@
                     serverIds.length === 0 ? "block" : "none";
                     
                 if (serverIds.length === 0) {
-                    document.getElementById('emptyState').innerText = "No active environments running on the server.";
+                    document.getElementById('emptyState').innerText = "No active environments";
                 }
 
             } catch (e) {
-                console.error("Polling error:", e);
+                console.error("Refresh error:", e);
                 document.getElementById('emptyState').style.display = "block";
                 document.getElementById('emptyState').innerText = `Error connecting to API: ${e.message}`;
             }
         }
 
-        function addStreamCard(baseUrl, id, envName) {
+        function addEnvironment(baseUrl, id, envName) {
             const grid = document.getElementById('grid');
             
-            // Create the card container
             const card = document.createElement('div');
-            card.className = 'env-card';
+            card.className = 'card';
             card.id = `card-${id}`;
             
-            // Create the header (Name + Short ID)
             const shortId = id.split('-')[0];
             const header = document.createElement('div');
             header.className = 'env-header';
             header.innerHTML = `<span>${envName}</span> <span class="env-id">${shortId}</span>`;
             
-            // Create the MJPEG stream image
+            const renderBox = document.createElement('div');
+            renderBox.className = 'render-box';
+            
             const img = document.createElement('img');
-            img.className = 'env-stream';
             img.alt = `Stream for ${envName}`;
-            // Point the src directly to our continuous stream endpoint
             img.src = `${baseUrl}/${id}/monitor/stream/`;
             
+            renderBox.appendChild(img);
             card.appendChild(header);
-            card.appendChild(img);
+            card.appendChild(renderBox);
             grid.appendChild(card);
         }
 
-        function removeStreamCard(id) {
+        function removeEnvironment(id) {
             const card = document.getElementById(`card-${id}`);
-            if (card) {
-                card.remove();
-            }
+            if (card) card.remove();
         }
 
         document.getElementById('emptyState').innerText = "Connecting...";
-        pollEnvironments();
-        pollingInterval = setInterval(pollEnvironments, 2000);
+        refresh();
+        refreshInterval = setInterval(refresh, 2000);
     </script>
 </body>
 </html>
